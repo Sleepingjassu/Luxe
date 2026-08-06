@@ -101,7 +101,7 @@ export async function createInitialHelpMenu(client) {
             },
             {
                 name: '\u200B',
-                value: `-# [ {bot_name} ](https://discord.gg/Ufz3rsYBPN)`,
+                value: `-# [ Luke ](https://discord.gg/Ufz3rsYBPN)`,
                 inline: false,
             },
         ],
