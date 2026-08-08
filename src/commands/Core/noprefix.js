@@ -4,7 +4,7 @@ const { EmbedBuilder } = require('discord.js');
 // const db = require('../../utils/postgresDatabase.js');
 
 // Add your Discord User ID(s) here
-const ownerIds = ['YOUR_DISCORD_ID_HERE']; 
+const ownerIds = ['1331197154622046211']; 
 
 module.exports = {
     name: 'noprefix',
