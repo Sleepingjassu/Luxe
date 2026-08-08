@@ -6,7 +6,7 @@ const ownerIds = ['1331197154622046211'];
 export default {
     name: 'noprefix',
     description: 'Add or remove users from the no-prefix list. (Owner Only)',
-    aliases: ['np'],
+    aliases: ['nop'],
     
     async execute(client, message, args) {
         // 1. Permission Check: Strict Bot Owner Check
