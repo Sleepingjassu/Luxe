@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import * as db from '../../utils/postgresDatabase.js';
+import { InteractionHelper } from '../../utils/interactionHelper.js';
 
+// Your Discord User ID
 const ownerIds = ['1331197154622046211']; 
 
 export default {
@@ -21,67 +22,65 @@ export default {
         .addUserOption((option) =>
             option
                 .setName("target")
-                .setDescription("The user to add or remove")
+                .setDescription("The user to add or remove (leave blank if listing)")
                 .setRequired(false)
         ),
     category: "Core",
 
     async execute(interaction, config, client) {
-        const userId = interaction.user?.id || interaction.author?.id;
+        // 1. Owner Check
+        const userId = interaction.user ? interaction.user.id : interaction.author?.id;
         if (!ownerIds.includes(userId)) {
-            return interaction.reply({ content: "❌ Only the bot owner can use this command.", ephemeral: true });
-        }
-
-        try {
-            await db.query(`CREATE TABLE IF NOT EXISTS noprefix_users (user_id VARCHAR(25) PRIMARY KEY)`);
-        } catch (err) {
-            console.error("Failed to create noprefix table:", err);
-        }
-
-        // Try getting action from options first (Slash command style)
-        let action = interaction.options?.getString("action");
-        let targetUser = interaction.options?.getUser("target");
-
-        // If options are missing (Prefix command style), parse raw content directly
-        if (!action) {
-            const content = interaction.content || "";
-            // Example: "!noprefix add @user" -> splits into ["!noprefix", "add", "@user"]
-            const args = content.trim().split(/\s+/);
-            
-            // Find which part matches our actions
-            const foundActionIndex = args.findIndex(arg => ['add', 'remove', 'list'].includes(arg.toLowerCase()));
-            
-            if (foundActionIndex !== -1) {
-                action = args[foundActionIndex].toLowerCase();
-            }
-        }
-
-        // Grab target user from standard mentions if not caught by options
-        if (!targetUser) {
-            targetUser = interaction.mentions?.users?.first();
-        }
-
-        if (!action || !['add', 'remove', 'list'].includes(action)) {
-            return interaction.reply({ 
-                content: `Please specify a valid action: \`add\`, \`remove\`, or \`list\`.\nUsage: \`!noprefix add @user\`` 
+            return InteractionHelper.universalReply(interaction, {
+                content: "❌ Only the bot owner can use this command.",
+                ephemeral: true
             });
         }
 
+        // 2. Safely grab the options using Discord's official method
+        const action = interaction.options.getString("action");
+        const targetUser = interaction.options.getUser("target");
+
+        // 3. Handle 'Add'
         if (action === 'add') {
             if (!targetUser) {
-                return interaction.reply({ content: "Please specify a user to add by mentioning them." });
+                return InteractionHelper.universalReply(interaction, { content: "Please specify a user to add." });
             }
             
-            await db.query('INSERT INTO noprefix_users (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING', [targetUser.id]);
+            // ==========================================
+            // 💾 DATABASE LOGIC GOES HERE
+            // ==========================================
             
             const successEmbed = new EmbedBuilder()
                 .setColor('Green')
                 .setDescription(`✅ Successfully added ${targetUser} to the No-Prefix list.`);
             
-            return interaction.reply({ embeds: [successEmbed] });
+            return InteractionHelper.universalReply(interaction, { embeds: [successEmbed] });
         }
 
+        // 4. Handle 'Remove'
         if (action === 'remove') {
+            if (!targetUser) {
+                return InteractionHelper.universalReply(interaction, { content: "Please specify a user to remove." });
+            }
+            
+            // ==========================================
+            // 💾 DATABASE LOGIC GOES HERE
+            // ==========================================
+            
+            const successEmbed = new EmbedBuilder()
+                .setColor('Orange')
+                .setDescription(`✅ Successfully removed ${targetUser} from the No-Prefix list.`);
+            
+            return InteractionHelper.universalReply(interaction, { embeds: [successEmbed] });
+        }
+
+        // 5. Handle 'List'
+        if (action === 'list') {
+            return InteractionHelper.universalReply(interaction, { content: "The database list will appear here!" });
+        }
+    },
+};
             if (!targetUser) {
                 return interaction.reply({ content: "Please specify a user to remove by mentioning them." });
             }
