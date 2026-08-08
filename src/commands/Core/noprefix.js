@@ -4,64 +4,60 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 const ownerIds = ['1331197154622046211']; 
 
 export default {
-    // 1. The blueprint Luxe needs to actually load the command
     data: new SlashCommandBuilder()
         .setName("noprefix")
         .setDescription("Add or remove users from the no-prefix list. (Owner Only)"),
 
-    // 2. The custom prefix handler specific to Titanbot/Luxe
-    async prefixExecute(interaction) {
-        // Check Owner
-        if (!ownerIds.includes(interaction.author?.id || interaction.user?.id)) {
-            return interaction.reply({ content: "❌ Only the bot owner can use this command." });
+    async prefixExecute(message) {
+        // 1. Check Owner
+        if (!ownerIds.includes(message.author?.id || message.user?.id)) {
+            return message.reply({ content: "❌ Only the bot owner can use this command." });
         }
 
-        // Get the arguments (e.g., ["add", "<@123456>"])
-        const args = interaction.content ? interaction.content.trim().split(/ +/).slice(1) : [];
-        const action = args[0]?.toLowerCase();
+        // 2. Foolproof Parsing
+        // Converts the whole message to lowercase and scans for the exact keywords
+        const content = message.content?.toLowerCase() || "";
+        let action = null;
         
-        // Find the targeted user
-        let targetUser = interaction.mentions?.users?.first();
-        if (!targetUser && args[1]) {
-            targetUser = interaction.client.users.cache.get(args[1].replace(/<@!?|>/g, ''));
+        if (content.includes("add")) action = "add";
+        else if (content.includes("remove")) action = "remove";
+        else if (content.includes("list")) action = "list";
+
+        if (!action) {
+            return message.reply({ content: "Please specify a valid action: `add`, `remove`, or `list`.\nUsage: `!noprefix add @user`" });
         }
 
-        if (!action || !['add', 'remove', 'list'].includes(action)) {
-            return interaction.reply({ content: "Please specify a valid action: `add`, `remove`, or `list`.\nUsage: `!noprefix add @user`" });
-        }
+        // 3. Find the mentioned user
+        const targetUser = message.mentions?.users?.first();
 
+        // 4. Handle Actions
         if (action === 'add') {
-            if (!targetUser) return interaction.reply({ content: "Please mention a user to add." });
+            if (!targetUser) return message.reply({ content: "Please mention a user to add." });
             
-            // ==========================================
-            // 💾 DATABASE LOGIC GOES HERE
-            // ==========================================
+            // Database integration will go here
             
             const successEmbed = new EmbedBuilder()
                 .setColor('Green')
                 .setDescription(`✅ Successfully added ${targetUser} to the No-Prefix list.`);
-            return interaction.reply({ embeds: [successEmbed] });
+            return message.reply({ embeds: [successEmbed] });
         }
 
         if (action === 'remove') {
-            if (!targetUser) return interaction.reply({ content: "Please mention a user to remove." });
+            if (!targetUser) return message.reply({ content: "Please mention a user to remove." });
             
-            // ==========================================
-            // 💾 DATABASE LOGIC GOES HERE
-            // ==========================================
+            // Database integration will go here
             
             const successEmbed = new EmbedBuilder()
                 .setColor('Orange')
                 .setDescription(`✅ Successfully removed ${targetUser} from the No-Prefix list.`);
-            return interaction.reply({ embeds: [successEmbed] });
+            return message.reply({ embeds: [successEmbed] });
         }
 
         if (action === 'list') {
-            return interaction.reply({ content: "The list feature would output your database results here!" });
+            return message.reply({ content: "The list feature will output database results here!" });
         }
     },
 
-    // 3. Fallback for slash command usage
     async execute(interaction) {
         return interaction.reply({ content: "Please use the prefix version: `!noprefix add @user`", ephemeral: true });
     }
