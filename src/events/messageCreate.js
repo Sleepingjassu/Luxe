@@ -48,7 +48,33 @@ async function handlePrefixCommand(message, client) {
   try {
     const guildConfig = await getGuildConfig(client, message.guild.id);
     const prefix = guildConfig?.prefix || getCommandPrefix();
-    const parsed = parsePrefixCommand(message.content, prefix);
+    
+    // Change const to let so we can override it
+    let parsed = parsePrefixCommand(message.content, prefix);
+    
+    // ==========================================
+    // 🚨 NO-PREFIX INJECTION SYSTEM 🚨
+    // ==========================================
+    if (!parsed) {
+      // Add your Discord ID here (Temporary until hooked to DB)
+      const noPrefixUsers = ['1331197154622046211']; 
+
+      if (noPrefixUsers.includes(message.author.id)) {
+        const rawArgs = message.content.trim().split(/ +/);
+        const possibleCommandName = rawArgs[0].toLowerCase();
+        
+        const resolvedName = resolveCommandAlias(possibleCommandName);
+        
+        // If the first word matches a real command, trick the bot into accepting it!
+        if (client.commands.has(resolvedName)) {
+           parsed = {
+             commandName: possibleCommandName,
+             args: rawArgs.slice(1)
+           };
+        }
+      }
+    }
+    // ==========================================
     
     if (!parsed) {
       return; 
@@ -145,6 +171,7 @@ async function handlePrefixCommand(message, client) {
     logger.error('Error handling prefix command:', error);
   }
 }
+
 
 async function handleCountingGame(message, client) {
   try {
