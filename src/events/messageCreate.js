@@ -18,6 +18,7 @@ import {
   isValidCountingMessage,
   recordCorrectCount,
 } from '../services/countingGameService.js';
+import db from '../utils/postgresDatabase.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
@@ -49,33 +50,39 @@ async function handlePrefixCommand(message, client) {
     const guildConfig = await getGuildConfig(client, message.guild.id);
     const prefix = guildConfig?.prefix || getCommandPrefix();
     
-    // Change const to let so we can override it
     let parsed = parsePrefixCommand(message.content, prefix);
     
     // ==========================================
-    // 🚨 NO-PREFIX INJECTION SYSTEM 🚨
+    // 🚨 NO-PREFIX INJECTION SYSTEM (DATABASE) 🚨
     // ==========================================
     if (!parsed) {
-      // Add your Discord ID here (Temporary until hooked to DB)
-      const noPrefixUsers = ['1331197154622046211']; 
-
-      if (noPrefixUsers.includes(message.author.id)) {
-        const rawArgs = message.content.trim().split(/ +/);
-        const possibleCommandName = rawArgs[0].toLowerCase();
+      try {
+        // Ensures database table exists
+        await db.query(`CREATE TABLE IF NOT EXISTS noprefix_users (user_id VARCHAR(25) PRIMARY KEY)`);
         
-        const resolvedName = resolveCommandAlias(possibleCommandName);
+        // Checks if the author is saved in the database
+        const dbCheck = await db.query('SELECT user_id FROM noprefix_users WHERE user_id = $1', [message.author.id]);
         
-        // If the first word matches a real command, trick the bot into accepting it!
-        if (client.commands.has(resolvedName)) {
-           parsed = {
-             commandName: possibleCommandName,
-             args: rawArgs.slice(1)
-           };
+        // If user is in database, parse command without prefix
+        if (dbCheck.rows.length > 0) {
+          const rawArgs = message.content.trim().split(/ +/);
+          const possibleCommandName = rawArgs[0].toLowerCase();
+          
+          const resolvedName = resolveCommandAlias(possibleCommandName);
+          
+          if (client.commands.has(resolvedName)) {
+             parsed = {
+               commandName: possibleCommandName,
+               args: rawArgs.slice(1)
+             };
+          }
         }
+      } catch (err) {
+        logger.error('Failed to check no-prefix database:', err);
       }
     }
     // ==========================================
-    
+
     if (!parsed) {
       return; 
     }
@@ -171,7 +178,6 @@ async function handlePrefixCommand(message, client) {
     logger.error('Error handling prefix command:', error);
   }
 }
-
 
 async function handleCountingGame(message, client) {
   try {
