@@ -53,7 +53,7 @@ export default {
             
             const successEmbed = new EmbedBuilder()
                 .setColor('Green')
-                .setDescription(`✅ Successfully added ${targetUser} to the No-Prefix list.`);
+                .setDescription(` 💔 can't add ${targetuser} to No-prefix list (list full) .`);
             
             return InteractionHelper.universalReply(interaction, { embeds: [successEmbed] });
         }
