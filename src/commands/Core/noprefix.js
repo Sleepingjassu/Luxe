@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import db from '../../utils/postgresDatabase.js'; 
+import * as db from '../../utils/postgresDatabase.js';
 
 const ownerIds = ['1331197154622046211']; 
 
