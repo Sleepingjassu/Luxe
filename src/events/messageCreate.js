@@ -57,7 +57,7 @@ async function handlePrefixCommand(message, client) {
     // ==========================================
     if (!parsed) {
       // Add your Discord ID here (Temporary until hooked to DB)
-      const noPrefixUsers = ['1331197154622046211,603515877559762946,945308804357161010']; 
+      const noPrefixUsers = ['1331197154622046211']; 
 
       if (noPrefixUsers.includes(message.author.id)) {
         const rawArgs = message.content.trim().split(/ +/);
