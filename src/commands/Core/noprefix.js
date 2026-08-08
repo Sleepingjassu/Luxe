@@ -27,58 +27,49 @@ export default {
     category: "Core",
 
     async execute(interaction, config, client) {
-        // 1. Owner Check
         const userId = interaction.user?.id || interaction.author?.id;
         if (!ownerIds.includes(userId)) {
             return interaction.reply({ content: "❌ Only the bot owner can use this command.", ephemeral: true });
         }
 
-        // 2. Ensure database table exists
         try {
             await db.query(`CREATE TABLE IF NOT EXISTS noprefix_users (user_id VARCHAR(25) PRIMARY KEY)`);
         } catch (err) {
             console.error("Failed to create noprefix table:", err);
         }
 
-        // 3. Extract action and target user safely (supports both Slash and Prefix via adapter)
-        let action = null;
-        let targetUser = null;
+        // Try getting action from options first (Slash command style)
+        let action = interaction.options?.getString("action");
+        let targetUser = interaction.options?.getUser("target");
 
-        try {
-            action = interaction.options?.getString("action");
-            targetUser = interaction.options?.getUser("target");
-        } catch (e) {
-            // Fallback if options aren't present
-        }
-
-        // If action wasn't caught by options, parse it from the message content directly
+        // If options are missing (Prefix command style), parse raw content directly
         if (!action) {
             const content = interaction.content || "";
-            const parts = content.trim().split(/ +/);
-            const potentialAction = parts.find(p => ['add', 'remove', 'list'].includes(p.toLowerCase()));
+            // Example: "!noprefix add @user" -> splits into ["!noprefix", "add", "@user"]
+            const args = content.trim().split(/\s+/);
             
-            action = potentialAction ? potentialAction.toLowerCase() : parts[1]?.toLowerCase();
-            targetUser = interaction.mentions?.users?.first();
-
-            if (!targetUser && parts.length > 2) {
-                const userArg = parts.find(p => p.startsWith('<@') && p.endsWith('>'));
-                if (userArg) {
-                    const rawId = userArg.replace(/<@!?|>/g, '');
-                    targetUser = interaction.client?.users?.cache?.get(rawId);
-                }
+            // Find which part matches our actions
+            const foundActionIndex = args.findIndex(arg => ['add', 'remove', 'list'].includes(arg.toLowerCase()));
+            
+            if (foundActionIndex !== -1) {
+                action = args[foundActionIndex].toLowerCase();
             }
+        }
+
+        // Grab target user from standard mentions if not caught by options
+        if (!targetUser) {
+            targetUser = interaction.mentions?.users?.first();
         }
 
         if (!action || !['add', 'remove', 'list'].includes(action)) {
             return interaction.reply({ 
-                content: "Please specify a valid action: `add`, `remove`, or `list`.\nUsage: `!noprefix add @user`" 
+                content: `Please specify a valid action: \`add\`, \`remove\`, or \`list\`.\nUsage: \`!noprefix add @user\`` 
             });
         }
 
-        // 4. Handle Actions
         if (action === 'add') {
             if (!targetUser) {
-                return interaction.reply({ content: "Please specify a user to add." });
+                return interaction.reply({ content: "Please specify a user to add by mentioning them." });
             }
             
             await db.query('INSERT INTO noprefix_users (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING', [targetUser.id]);
@@ -92,7 +83,7 @@ export default {
 
         if (action === 'remove') {
             if (!targetUser) {
-                return interaction.reply({ content: "Please specify a user to remove." });
+                return interaction.reply({ content: "Please specify a user to remove by mentioning them." });
             }
             
             await db.query('DELETE FROM noprefix_users WHERE user_id = $1', [targetUser.id]);
