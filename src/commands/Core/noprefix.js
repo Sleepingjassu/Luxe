@@ -1,15 +1,13 @@
-const { EmbedBuilder } = require('discord.js');
+import { EmbedBuilder } from 'discord.js';
 
-// If you are using PostgreSQL, import your database utility here:
-// const db = require('../../utils/postgresDatabase.js');
-
-// Add your Discord User ID(s) here
+// Your Discord User ID
 const ownerIds = ['1331197154622046211']; 
 
-module.exports = {
+export default {
     name: 'noprefix',
     description: 'Add or remove users from the no-prefix list. (Owner Only)',
     aliases: ['np'],
+    
     async execute(client, message, args) {
         // 1. Permission Check: Strict Bot Owner Check
         if (!ownerIds.includes(message.author.id)) {
@@ -19,7 +17,7 @@ module.exports = {
             return message.reply({ embeds: [errorEmbed] });
         }
 
-        // 2. Parse arguments (e.g., "!noprefix add @user")
+        // 2. Parse arguments
         const action = args[0]?.toLowerCase();
         const targetUser = message.mentions.users.first() || client.users.cache.get(args[1]);
 
@@ -34,8 +32,6 @@ module.exports = {
 
             // ==========================================
             // 💾 DATABASE LOGIC GOES HERE
-            // Example for PostgreSQL:
-            // await db.query('INSERT INTO noprefix_users (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [targetUser.id]);
             // ==========================================
 
             const successEmbed = new EmbedBuilder()
@@ -51,8 +47,6 @@ module.exports = {
 
             // ==========================================
             // 💾 DATABASE LOGIC GOES HERE
-            // Example for PostgreSQL:
-            // await db.query('DELETE FROM noprefix_users WHERE user_id = $1', [targetUser.id]);
             // ==========================================
 
             const successEmbed = new EmbedBuilder()
@@ -64,9 +58,12 @@ module.exports = {
 
         // 6. Handle 'list' action
         if (action === 'list') {
-            // Fetch users from your database here and map them to mentions
             return message.reply("The list feature would output your database results here!");
         }
+    },
+    
+    // Fallback: Some bot handlers expect 'run' instead of 'execute'
+    async run(client, message, args) {
+        return this.execute(client, message, args);
     }
 };
-
